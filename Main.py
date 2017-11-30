@@ -2,10 +2,12 @@ import csv
 import datetime
 import os.path
 import re
+from itertools import chain
 
-# Initialisation de la variable BDD qui contient toute la base de donnée
+# Initialisation de la variable BDD qui contient toute la base de donnée et de la variable DATA qui contient l'info sur
+# les mailings précédents
 BDD = []
-
+DATA = []
 
 # Gestion des entrées de l'utilisateur pour le chemin du document csv
 def grab_path_input():
@@ -79,12 +81,33 @@ def transform_nom(nom):
 
     return actual_name.strip(' ')
 
+#Variable qui compte le nombre de clients à qui l'on a déjà envoyé un mailing.
+nbr_client = 0
+
+
+# Fonction qui vérifie si les clients ont déjà participé à un mailing.
+def check_data(numero):
+    num_tel = BDD[numero][3][:14]
+
+    if num_tel in chain.from_iterable(DATA):
+        global nbr_client
+        nbr_client += 1
+    else:
+        DATA.append([num_tel, str(datetime.datetime.now().date())])
+        BD_filtrée.append([transform_nom(BDD[numero - 1][0]), transform_address(BDD[numero][3])[0], transform_address(BDD[numero][3])[1]])
+
 
 # Lecture du fichier csv et écriture de chaque ligne dans la variable BDD
-with open(grab_path_input(), "r") as fich:
+with open(grab_path_input(), "r", encoding='latin-1') as fich:
     base_de_données = csv.reader(fich)
     for ligne in base_de_données:
         BDD.append(ligne)
+
+# Lecture du fichier des clients à qui l'on a déjà fait un mailing
+with open("DATABASE.csv", "r", encoding='latin-1') as DATAB:
+    DB = csv.reader(DATAB)
+    for ligne in DB:
+        DATA.append(ligne)
 
 DATE = grab_date_input()
 
@@ -111,17 +134,24 @@ for i in range(len(BDD)):
                 n = True
 
         if nouvelle_date < DATE:
-            BD_filtrée.append([transform_nom(BDD[i - 1][0]), transform_address(BDD[i][3])[0], transform_address(BDD[i][3])[1]])
+            check_data(i)
 
-print(str(len(BD_filtrée)) + ' clients trouvés')
+print('\n' + str(len(BD_filtrée)) + ' clients ajoutés au fichier')
+print(str(nbr_client) + ' clients ont déjà reçu un mailing où possèdent un numéro de téléphone en duplicat')
 
 BD_filtrée = sorted(BD_filtrée)
 
-
+# Écris le fichier csv qui contient l'information pour le mailing
 with open(NOM_FICHIER + '.csv', 'w', newline='') as csvfile:
     writer = csv.writer(csvfile, dialect='excel')
-    writer.writerow(['Nom', 'Adresse'])
+    writer.writerow(['Nom', 'Adresse', '', 'Date courante: ' + str(datetime.datetime.now().date()), 'Date choisie: ' + str(DATE)])
     for ligne in BD_filtrée:
         writer.writerow(ligne)
 
-print('Le fichier ' + NOM_FICHIER + '.csv a été crée avec succès dans le dossier principal!')
+# Écris le fichier csv qui contient l'information des personnes à qui l'on a déjà envoyé le mailing.
+with open('DATABASE.csv', 'w', newline='') as csvfile:
+    writer = csv.writer(csvfile, dialect='excel')
+    for ligne in DATA:
+        writer.writerow(ligne)
+
+print('\n' + 'Le fichier ' + NOM_FICHIER + '.csv a été crée avec succès dans le dossier principal!')
