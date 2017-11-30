@@ -115,6 +115,7 @@ NOM_FICHIER = input('Entrez le nom du fichier csv qui sera crée (sans le .csv):
 
 BD_filtrée = []
 
+
 # Isoler les clients qui sont venus en consultation et qui n'ont pas acheté depuis la date fixée.
 for i in range(len(BDD)):
     if BDD[i][-3] != '' and BDD[i][-3] != "Groupe\n\n" and BDD[i][-3][:6] == "Groupe":
